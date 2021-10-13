@@ -26,6 +26,10 @@ const int encB2 = 19;
 const int encC1 = 20;
 const int encC2 = 21;
 
+// Timeout
+const int timeoutVal = 12000;
+const long maxEncVal = 50000;
+
 // Create Encoder objects
 extern Encoder EncA;
 extern Encoder EncB;
@@ -35,20 +39,19 @@ extern Encoder EncC;
 void setup_motors();
 /* moves the effector with all 3 actuators together, given a long */
 void move_effector(long);
+/* moves 2 of 3 actuators */
+void move_2_actuators(Encoder *, Encoder *, int, int, int, int, long);
+/* moves a single actuator */
+void move_single(Encoder*, long, int, int);
 /* updates the position of a single encoder */
 int update_pos_single(long*, Encoder*);
 /* prints the position of all encoders, if change is detected */
-void print_diff_pos();
-/* moves a single actuator */
-void move_single(Encoder*, long, int, int);
+void print_diff_pos(long*, long*, long*);
+void print_pos();
 /* moves actuator A, B, C */
 void move_A(long);
 void move_B(long);
 void move_C(long);
-/* moves effector away from corresponding actuator */
-void move_from_A(long);
-void move_from_B(long);
-void move_from_C(long);
 /* moves effector toward corresponding actuator */
 void move_to_A(long);
 void move_to_B(long);
@@ -62,5 +65,12 @@ void turn_off();
 void reset_enc();
 /* test movement of A, B, C, in that order */
 void test_move(long);
+/* test full movement */
+void test_full(long);
+
+/* timeout function */
+bool timeout(unsigned long);
+/* convert percent to pos */
+long percent_to_pos(int);
 
 #endif

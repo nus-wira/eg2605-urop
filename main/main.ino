@@ -17,6 +17,10 @@ void loop() {
     reset_enc();
     char dir = Serial.read();
     long t = Serial.parseInt();
+    // Small value is interpreted as percentage
+    if (t >= -100 && t <= 100) {
+      t = percent_to_pos(t);
+    }
     switch (dir) {
     case 'm':
       move_effector(t);
@@ -30,8 +34,11 @@ void loop() {
     case 'c':
       move_C(t);
       break;
+    case 'h':
+      move_hex(t);
+      break;
     case 't':
-      test_move(100);
+      test_full(t);
       break;
     }
   }
