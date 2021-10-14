@@ -23,148 +23,243 @@ void setup_motors() {
 }
 
 /*
- * Moves all 3 actuators a corresponding pos up or down.
- * Moves up if pos > 0, and down otherwise.
+ * Moves all 3 actuators to their determined final positions.
  * 
- * pos: threshold value to check from the encoders
+ * finalPosA : encoder value for A
+ * finalPosB : encoder value for B
+ * finalPosC : encoder value for C
  */
-void move_effector(long pos) {
-  reset_enc();
+void move_effector_to(long finalPosA, long finalPosB, long finalPosC) {
   unsigned long prevTime = millis();
-  // up
-  if (pos > 0) {
-    // switch on all the motors
-    digitalWrite(in1, HIGH);
-    digitalWrite(in2, LOW);
-    digitalWrite(in3, HIGH);
-    digitalWrite(in4, LOW);
-    digitalWrite(in5, HIGH);
-    digitalWrite(in6, LOW);
-    // while any actuator has not reached the threshold
-    while ((EncA.read() < pos || EncB.read() < pos || EncC.read() < pos) 
-            && !timeout(prevTime)) {
-      if (EncA.read() >= pos) {
-        digitalWrite(in1, LOW);
-        digitalWrite(in2, LOW);
-      }
-      if (EncB.read() >= pos) {
-        digitalWrite(in3, LOW);
-        digitalWrite(in4, LOW);
-      }
-      if (EncC.read() >= pos) {
-        digitalWrite(in5, LOW);
-        digitalWrite(in6, LOW);
-      }
+  finalPosA = check_pos(finalPosA);
+  finalPosA = check_pos(finalPosB);
+  finalPosA = check_pos(finalPosC);
+
+  long dA = finalPosA - EncA.read();
+  long dB = finalPosB - EncB.read();
+  long dC = finalPosC - EncC.read();
+  bool moreA = dA > 0;
+  bool moreB = dB > 0;
+  bool moreC = dC > 0;
+  bool done = false, doneA = false, doneB = false, doneC = false;
+
+  // switch on motors
+  digitalWrite(in1, HIGH & moreA);
+  digitalWrite(in2, LOW | !moreA);
+  digitalWrite(in3, HIGH & moreB);
+  digitalWrite(in4, LOW | !moreB);
+  digitalWrite(in5, HIGH & moreC);
+  digitalWrite(in6, LOW | !moreC);
+
+  // while any actuator has not reached the threshold
+  while (!done) {
+    // get absolute distance to final pos
+    dA = finalPosA - EncA.read();
+    dB = finalPosB - EncB.read();
+    dC = finalPosC - EncC.read();
+    dA = dA > 0 ? dA : -dA;
+    dB = dB > 0 ? dB : -dB;
+    dC = dC > 0 ? dC : -dC;
+    doneA = dA < epsilon;
+    doneB = dB < epsilon;
+    doneC = dC < epsilon;
+    done = (doneA && doneB && doneC) || timeout(prevTime);
+
+    if (doneA) {
+      digitalWrite(in1, LOW);
+      digitalWrite(in2, LOW);
     }
-  } else { //down
-    digitalWrite(in1, LOW);
-    digitalWrite(in2, HIGH);
-    digitalWrite(in3, LOW);
-    digitalWrite(in4, HIGH);
-    digitalWrite(in5, LOW);
-    digitalWrite(in6, HIGH);
-    while ((EncA.read() > pos || EncB.read() > pos || EncC.read() > pos)
-            && !timeout(prevTime)) {
-      if (EncA.read() <= pos) {
-        digitalWrite(in1, LOW);
-        digitalWrite(in2, LOW);
-      }
-      if (EncB.read() <= pos) {
-        digitalWrite(in3, LOW);
-        digitalWrite(in4, LOW);
-      }
-      if (EncC.read() <= pos) {
-        digitalWrite(in5, LOW);
-        digitalWrite(in6, LOW);
-      }
+    if (doneB) {
+      digitalWrite(in3, LOW);
+      digitalWrite(in4, LOW);
+    }
+    if (doneC) {
+      digitalWrite(in5, LOW);
+      digitalWrite(in6, LOW);
     }
   }
-  turn_off();
-  delay(500);
-  print_pos();
 }
 
 /*
- * Moves 2 chosen actuators a corresponding pos up or down.
- * Moves up if pos > 0, and down otherwise.
+ * Moves all 3 actuators to the same determined final positions.
  * 
- * &enc1 : pointer to first encoder
- * &enc2 : pointer to second encoder
- * in1: first pin value for motor for first encoder
- * in2: second pin value for motor for first encoder
- * in3: first pin value for motor for second encoder
- * in4: second pin value for motor for second encoder
- * pos: threshold value to check from the encoders
+ * finalPos : encoder value for all 
  */
-void move_2_actuators(Encoder *enc1, Encoder *enc2, int in1, int in2, int in3, int in4, long pos) {
-  reset_enc();
-  unsigned long prevTime = millis();
-  // up
-  if (pos > 0) {
-    // switch on all the motors
-    digitalWrite(in1, HIGH);
-    digitalWrite(in2, LOW);
-    digitalWrite(in3, HIGH);
-    digitalWrite(in4, LOW);
-    // while any actuator has not reached the threshold
-    while ((enc1->read() < pos || enc2->read() < pos) 
-            && !timeout(prevTime)) {
-      if (enc1->read() >= pos) {
-        digitalWrite(in1, LOW);
-        digitalWrite(in2, LOW);
-      }
-      if (enc2->read() >= pos) {
-        digitalWrite(in3, LOW);
-        digitalWrite(in4, LOW);
-      }
-    }
-  } else { //down
-    digitalWrite(in1, LOW);
-    digitalWrite(in2, HIGH);
-    digitalWrite(in3, LOW);
-    digitalWrite(in4, HIGH);
-    while ((enc1->read() > pos || enc2->read() > pos) 
-           && !timeout(prevTime)) {
-      if (enc1->read() <= pos) {
-        digitalWrite(in1, LOW);
-        digitalWrite(in2, LOW);
-      }
-      if (enc2->read() <= pos) {
-        digitalWrite(in3, LOW);
-        digitalWrite(in4, LOW);
-      }
-    }
-  }
-  turn_off();
-  print_pos();
+void move_effector_to(long finalPos) {
+  move_effector_to(finalPos, finalPos, finalPos);
 }
 
 /*
- * moves a single actuator 
+ * Checks validity of position, and returns a value within range if not
  * 
- * &enc : pointer to corresponding encoder
- * pos: threshold value to check from the encoders
- * in1 : first pin value for the motor
- * in2 : second pin value for the motor
+ * pos : position value to check
+ * 
+ * return : valid position value
  */
-void move_single(Encoder* enc, long pos, int in1, int in2) {
-  reset_enc();
-  unsigned long prevTime = millis();
-  // move up
-  if (pos > 0) {
-    digitalWrite(in1, HIGH);
-    digitalWrite(in2, LOW);
-    while (enc->read() < pos && !timeout(prevTime));
-  } else { // move down
-    digitalWrite(in1, LOW);
-    digitalWrite(in2, HIGH);
-    while (enc->read() > pos && !timeout(prevTime));
-  }
+long check_pos(long pos) {
+  if (pos > maxEncVal)
+    return maxEncVal;
+  if (pos < 0)
+    return 0;
+  return pos;
+}
+
+/*
+ * Functions: move_A, move_B, move_C
+ * 
+ * move their corresponding actuators
+ */
+void move_A(long posA) {
+  long posB = EncB.read();
+  long posC = EncC.read();
+  move_effector_to(posA, posB, posC);
+}
+
+void move_B(long posB) {
+  long posA = EncA.read();
+  long posC = EncC.read();
+  move_effector_to(posA, posB, posC);
+}
+
+void move_C(long posC) {
+  long posA = EncA.read();
+  long posB = EncB.read();
+  move_effector_to(posA, posB, posC);
+}
+
+/*
+ * Functions: move_to_A, move_to_B, move_to_C
+ * 
+ * moves the effector to the corresponding actuator
+ * by moving the other two actuators up (if pos > 0)
+ * or down otherwise
+ * 
+ * pos: threshold value to check from the encoders
+ */
+void move_to_A(long pos) {
+  long posA = EncA.read();
+  move_effector_to(posA, pos, pos);
+}
+
+void move_to_B(long pos) {
+  long posB = EncB.read();
+  move_effector_to(pos, posB, pos);
+}
+
+void move_to_C(long pos) {
+  long posC = EncC.read();
+  move_effector_to(pos, pos, posC);
+}
+
+/*
+ * Moves the effector in a pseudo hexagonal shape
+ */
+void move_hex(long pos) {
+  move_to_A(pos);
+  move_B(0);
+  move_A(pos);
+  move_C(0);
+  move_B(pos);
+  move_A(0);
+  move_C(pos);
+  move_to_A(0);
+}
+
+/*
+ * turns off all output pins to motors
+ */
+void turn_off() {
+  digitalWrite(in1, LOW);
+  digitalWrite(in2, LOW);
+  digitalWrite(in3, LOW);
+  digitalWrite(in4, LOW);
+  digitalWrite(in5, LOW);
+  digitalWrite(in6, LOW);
+}
+
+/*
+ * resets encoder values to 0
+ */
+void reset_enc() {
+  EncA.write(0);
+  EncB.write(0);
+  EncC.write(0);
+}
+
+/*
+ * movement test for A, B, C, in that order.
+ * can be used to determine A, B, C.
+ */
+void test_move(long pos) {
+  move_A(pos);
+  move_A(0);
+  move_B(pos);
+  move_B(0);
+  move_C(pos);
+  move_C(0);
+  turn_off();
+}
+
+/*
+ * movement test for A,B,C, then
+ * movement test for hexagon
+ */
+void test_full(long pos) {
+  Serial.print("pos value: ");
+  Serial.println(pos);
+  Serial.println("check A,B,C");
+  test_move(pos);
+  Serial.println("moving to A");
+  move_to_A(pos);
+  move_to_A(0);
+  Serial.println("moving to B");
+  move_to_B(pos);
+  move_to_B(0);
+  Serial.println("moving to C");
+  move_to_C(pos);
+  move_to_C(0);
+  Serial.println("moving hexagonal");
+  move_hex(pos);
+  turn_off();
+}
+
+/*
+ * convert percentage value to position value
+ *
+ * percent : value in percentage
+ * 
+ * return : position value
+ */
+long percent_to_pos(int percent) {
+  if (percent > 100)
+    percent = 100;
+  else if (percent < 0)
+    percent = 0;
+  long pos = percent * maxEncVal / 100;
+  return pos;
+}
+
+/*
+ * timeout function if > 10 seconds passed
+ */
+bool timeout(unsigned long prevTime) {
   unsigned long curTime = millis();
-  Serial.println(curTime - prevTime);
-  turn_off();
-  print_pos();
+  return curTime - prevTime > timeoutVal;
 }
+
+/*
+ * calibrate value of encoder to be 0 at bottom
+ */
+void calib_enc() {
+  unsigned long curTime = millis();
+  // Overwrite any value in encoder
+  EncA.write(maxEncVal);
+  EncB.write(maxEncVal);
+  EncC.write(maxEncVal);
+  move_effector_to(-maxEncVal);
+  reset_enc();
+}
+
 
 /*
  * updates the current position of an actuator 
@@ -202,126 +297,4 @@ void print_diff_pos(long *posA, long *posB, long *posC) {
 void print_pos() {
   long posA = -999, posB = -999, posC = -999;
   print_diff_pos(&posA, &posB, &posC);
-}
-
-/*
- * Functions: move_A, move_B, move_C
- * 
- * move their corresponding actuators
- */
-void move_A(long pos) {
-  move_single(&EncA, pos, in1, in2);
-}
-
-void move_B(long pos) {
-  move_single(&EncB, pos, in3, in4);
-}
-
-void move_C(long pos) {
-  move_single(&EncC, pos, in5, in6);
-}
-
-/*
- * Functions: move_to_A, move_to_B, move_to_C
- * 
- * moves the effector to the corresponding actuator
- * by moving the other two actuators up (if pos > 0)
- * or down otherwise
- * 
- * pos: threshold value to check from the encoders
- */
-void move_to_A(long pos) {
-  move_2_actuators(&EncB, &EncC, in3, in4, in5, in6, pos);
-}
-
-void move_to_B(long pos) {
-  move_2_actuators(&EncA, &EncC, in1, in2, in5, in6, pos);
-}
-
-void move_to_C(long pos) {
-  move_2_actuators(&EncA, &EncB, in1, in2, in3, in4, pos);
-}
-
-void move_hex(long pos) {
-  move_to_A(pos);
-  move_B(-pos);
-  move_A(pos);
-  move_C(-pos);
-  move_B(pos);
-  move_A(-pos);
-  move_C(pos);
-  move_to_A(-pos);
-}
-
-/*
- * turns off all output pins to motors
- */
-void turn_off() {
-  digitalWrite(in1, LOW);
-  digitalWrite(in2, LOW);
-  digitalWrite(in3, LOW);
-  digitalWrite(in4, LOW);
-  digitalWrite(in5, LOW);
-  digitalWrite(in6, LOW);
-}
-
-/*
- * resets encoder values to 0
- */
-void reset_enc() {
-  EncA.write(0);
-  EncB.write(0);
-  EncC.write(0);
-}
-
-/*
- * movement test for A, B, C, in that order.
- * can be used to determine A, B, C.
- */
-void test_move(long pos) {
-  move_A(pos);
-  move_A(-pos);
-  move_B(pos);
-  move_B(-pos);
-  move_C(pos);
-  move_C(-pos);
-  turn_off();
-}
-
-/*
- * movement test for A,B,C, then
- * movement test for hexagon
- */
-void test_full(long pos) {
-  Serial.print("pos value: ");
-  Serial.println(pos);
-  Serial.println("check A,B,C");
-  test_move(pos);
-  Serial.println("moving to A");
-  move_to_A(pos);
-  move_to_A(-pos);
-  Serial.println("moving to B");
-  move_to_B(pos);
-  move_to_B(-pos);
-  Serial.println("moving to C");
-  move_to_C(pos);
-  move_to_C(-pos);
-  Serial.println("moving hexagonal");
-  move_hex(pos);
-  turn_off();
-}
-
-long percent_to_pos(int percent) {
-  if (percent < -100 || percent > 100)
-    return 0;
-  long pos = percent * maxEncVal / 100;
-  return pos;
-}
-
-/*
- * timeout function if > 10 seconds passed
- */
-bool timeout(unsigned long prevTime) {
-  unsigned long curTime = millis();
-  return curTime - prevTime > timeoutVal;
 }

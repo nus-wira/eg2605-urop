@@ -27,8 +27,9 @@ const int encC1 = 20;
 const int encC2 = 21;
 
 // Timeout
-const int timeoutVal = 12000;
+const int timeoutVal = 10000;
 const long maxEncVal = 50000;
+const int epsilon = 100;
 
 // Create Encoder objects
 extern Encoder EncA;
@@ -38,16 +39,10 @@ extern Encoder EncC;
 /* sets up the motor pins with pinMode */
 void setup_motors();
 /* moves the effector with all 3 actuators together, given a long */
-void move_effector(long);
-/* moves 2 of 3 actuators */
-void move_2_actuators(Encoder *, Encoder *, int, int, int, int, long);
-/* moves a single actuator */
-void move_single(Encoder*, long, int, int);
-/* updates the position of a single encoder */
-int update_pos_single(long*, Encoder*);
-/* prints the position of all encoders, if change is detected */
-void print_diff_pos(long*, long*, long*);
-void print_pos();
+void move_effector_to(long, long, long);
+void move_effector_to(long);
+/* checks validity of position value */
+long check_pos(long);
 /* moves actuator A, B, C */
 void move_A(long);
 void move_B(long);
@@ -63,6 +58,7 @@ void move_hex(long);
 void turn_off();
 /* resets all encoder values to 0 */
 void reset_enc();
+
 /* test movement of A, B, C, in that order */
 void test_move(long);
 /* test full movement */
@@ -72,5 +68,14 @@ void test_full(long);
 bool timeout(unsigned long);
 /* convert percent to pos */
 long percent_to_pos(int);
+
+/* calibrate encoder values */
+void calib_enc();
+
+/* updates the position of a single encoder */
+int update_pos_single(long*, Encoder*);
+/* prints the position of all encoders, if change is detected */
+void print_diff_pos(long*, long*, long*);
+void print_pos();
 
 #endif

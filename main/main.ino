@@ -8,13 +8,12 @@ void setup() {
   setup_motors();
 
   Serial.begin(9600);
-  reset_enc();
+  calib_enc();
 }
 
 void loop() {
   print_diff_pos(&posA, &posB, &posC);
   if (Serial.available()) {
-    reset_enc();
     char dir = Serial.read();
     long t = Serial.parseInt();
     // Small value is interpreted as percentage
@@ -23,7 +22,7 @@ void loop() {
     }
     switch (dir) {
     case 'm':
-      move_effector(t);
+      move_effector_to(t);
       break;
     case 'a':
       move_A(t);
