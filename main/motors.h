@@ -3,6 +3,7 @@
 
 //#include "Arduino.h"
 #include <Encoder.h>
+#include "logic.h"
 
 // Motor control pins
 // motor A
@@ -26,11 +27,6 @@ const int encB2 = 19;
 const int encC1 = 20;
 const int encC2 = 21;
 
-// Timeout
-const int timeoutVal = 10000;
-const long maxEncVal = 50000;
-const int epsilon = 100;
-
 // Create Encoder objects
 extern Encoder EncA;
 extern Encoder EncB;
@@ -41,8 +37,6 @@ void setup_motors();
 /* moves the effector with all 3 actuators together, given a long */
 void move_effector_to(long, long, long);
 void move_effector_to(long);
-/* checks validity of position value */
-long check_pos(long);
 /* moves actuator A, B, C */
 void move_A(long);
 void move_B(long);
@@ -59,23 +53,9 @@ void turn_off();
 /* resets all encoder values to 0 */
 void reset_enc();
 
-/* test movement of A, B, C, in that order */
-void test_move(long);
-/* test full movement */
-void test_full(long);
-
-/* timeout function */
-bool timeout(unsigned long);
-/* convert percent to pos */
-long percent_to_pos(int);
-
 /* calibrate encoder values */
 void calib_enc();
-
-/* updates the position of a single encoder */
-int update_pos_single(long*, Encoder*);
-/* prints the position of all encoders, if change is detected */
-void print_diff_pos(long*, long*, long*);
-void print_pos();
+/* get current encoder values */
+void get_cur_pos(long[]);
 
 #endif

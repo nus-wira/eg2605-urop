@@ -1,0 +1,21 @@
+@startuml
+
+actor User
+
+participant ":Serial" as Serial
+participant ":Main" as Main
+participant ":Logic" as Logic
+
+User -> Serial : "m500"
+Serial -> Main
+Main -> Serial : read()
+Serial --> Main : "m"
+opt have integer
+    Main -> Serial : parseInt()
+    Serial --> Main : 500
+end
+ref over Main, Logic : moveEffector
+Main --> Serial : "Done!"
+Serial --> User : "Done!"
+
+@enduml

@@ -1,0 +1,16 @@
+@startuml
+hide circle
+hide member
+
+class main
+class motors
+class movetest
+class ui
+class logic
+
+main -|> movetest
+main -u-|> ui
+movetest -|> motors
+motors -|> logic
+
+@enduml

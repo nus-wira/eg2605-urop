@@ -1,0 +1,24 @@
+@startuml
+
+autoactivate on
+
+group sd moveEffector
+participant ":Move" as Move
+participant ":Done" as Done
+participant ":Position" as Pos
+participant ":Motor" as Motor
+
+-> Move
+Move -> Pos : checkPos(500)
+Pos --> Move
+Move -> Motor : digitalWrite(HIGH)
+Motor --> Move
+loop not done
+    Move -> Done : checkDone()
+    Done --> Move
+end
+Move -> Motor : digitalWrite(LOW)
+Motor --> Move
+[<-- Move
+end
+@enduml
