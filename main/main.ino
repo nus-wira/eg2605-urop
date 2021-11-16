@@ -26,24 +26,24 @@ void loop() {
   char dir = Serial.read();
   long i = Serial.parseInt();
   // Parse long value
-  long t = percent_to_pos(i);
-  print_parsed_int(i, t);
+  long pos = percent_to_pos(i);
+  print_parsed_int(i, pos);
   
   switch (dir) {
   case 'm':
-    move_effector_to(t);
+    move_effector_to(pos);
     break;
   case 'a':
-    move_A(t);
+    move_A(pos);
     break;
   case 'b':
-    move_B(t);
+    move_B(pos);
     break;
   case 'c':
-    move_C(t);
+    move_C(pos);
     break;
   case 't':
-    test_full(t);
+    test_full(pos);
     break;
   case 'r':
     calib_enc();
